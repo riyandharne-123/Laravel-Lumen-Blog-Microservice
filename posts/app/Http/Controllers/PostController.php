@@ -42,7 +42,7 @@ class PostController extends Controller
 
         if(!$posts) {
             $posts = $this->helper->getUsersPosts($request->all());
-            Redis::set('user_posts' . $user_id, $posts);
+            Redis::set('user_posts_' . $user_id, $posts, 'EX', 3600);
         }
 
         return $posts;
@@ -74,7 +74,7 @@ class PostController extends Controller
                 ], 401);
             }
 
-            Redis::set('post_' . $post_id, $post);
+            Redis::set('post_' . $post_id, $post, 'EX', 3600);
         }
 
         return response()->json($post, 200);
@@ -96,6 +96,7 @@ class PostController extends Controller
         }
 
         $post = $this->helper->createPost($request->all());
+        Redis::set('post_' . $post->id, $post, 'EX', 3600);
         return response()->json($post, 200);
     }
 }

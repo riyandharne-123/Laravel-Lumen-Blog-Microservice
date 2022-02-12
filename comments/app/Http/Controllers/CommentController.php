@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\Request;
 use Validator;
 
@@ -28,13 +29,23 @@ class CommentController extends Controller
             'post_id' => 'required|integer'
         ]);
 
+        $post_id = $request->query('post_id');
+
         if ($validator->fails()) {
             return response()->json([
                 'errors' => $validator->errors()
             ], 401);
         }
 
-        return $this->helper->getAllCommentsForPost($request['post_id']);
+        $comments = Redis::get('post_comments_' . $post_id);
+        $comments = json_decode($comments);
+
+        if(!$comments) {
+            $comments = $this->helper->getAllCommentsForPost($request->all());
+            Redis::set('post_comments_' . $post_id, $comments, 'EX', 1800);
+        }
+
+        return $comments;
     }
 
     public function createComment(Request $request)
