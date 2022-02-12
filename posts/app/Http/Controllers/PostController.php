@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Http\Request;
 use Validator;
 
@@ -34,7 +35,17 @@ class PostController extends Controller
             ], 401);
         }
 
-        return $this->helper->getUsersPosts($request->all());
+        $user_id = $request->query('user_id');
+
+        $posts = Redis::get('user_posts_' . $user_id);
+        $posts = json_decode($posts);
+
+        if(!$posts) {
+            $posts = $this->helper->getUsersPosts($request->all());
+            Redis::set('user_posts' . $user_id, $posts);
+        }
+
+        return $posts;
     }
 
     public function getPost(Request $request)
@@ -49,12 +60,21 @@ class PostController extends Controller
             ], 401);
         }
 
-        $post = $this->helper->getPost($request->query('post_id'));
+        $post_id = $request->query('post_id');
+
+        $post = Redis::get('post_' . $post_id);
+        $post = json_decode($post);
 
         if(!$post) {
-            return response()->json([
-                'error' => 'Post does not exist.'
-            ], 401);
+            $post = $this->helper->getPost($post_id);
+
+            if(!$post) {
+                return response()->json([
+                    'error' => 'Post does not exist.'
+                ], 401);
+            }
+
+            Redis::set('post_' . $post_id, $post);
         }
 
         return response()->json($post, 200);
