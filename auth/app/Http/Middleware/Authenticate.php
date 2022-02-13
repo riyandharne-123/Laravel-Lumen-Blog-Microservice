@@ -22,7 +22,7 @@ class Authenticate extends Middleware
         }
 
         try {
-            JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
+            JWT::decode($token, new Key(config('jwt.secret'), 'HS256'));
         } catch(ExpiredException $e) {
             return response()->json([
                 'error' => 'Provided token is expired.'

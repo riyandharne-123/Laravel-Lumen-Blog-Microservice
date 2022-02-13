@@ -27,7 +27,21 @@ class AuthController extends Controller
 
         // As you can see we are passing `JWT_SECRET` as the second parameter that will
         // be used to decode the token in the future.
-        return JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+        return JWT::encode($payload, config('jwt.secret'), 'HS256');
+    }
+
+
+    protected function jwtLogout(User $user) {
+        $payload = [
+            'iss' => "lumen-jwt", // Issuer of the token
+            'sub' => $user->id, // Subject of the token
+            'iat' => time(), // Time when JWT was issued.
+            'exp' => time() // Expiration time now
+        ];
+
+        // As you can see we are passing `JWT_SECRET` as the second parameter that will
+        // be used to decode the token in the future.
+        return JWT::encode($payload, config('jwt.secret'), 'HS256');
     }
 
     /**
@@ -81,8 +95,10 @@ class AuthController extends Controller
     /**
      * Sign out
     */
-    public function signout() {
-        auth()->logout();
+    public function signout(Request $request) {
+        $decoded = JWT::decode($request->bearerToken(), new Key(config('jwt.secret'), 'HS256'));
+        $user = User::find($decoded->sub);
+        $this->jwtLogout($user);
         return response()->json(['message' => 'User loged out']);
     }
 
@@ -90,7 +106,7 @@ class AuthController extends Controller
      * User
     */
     public function user(Request $request) {
-        $decoded = JWT::decode($request->bearerToken(), new Key(env('JWT_SECRET'), 'HS256'));
+        $decoded = JWT::decode($request->bearerToken(), new Key(config('jwt.secret'), 'HS256'));
         $user = User::find($decoded->sub);
         return response()->json($user);
     }
